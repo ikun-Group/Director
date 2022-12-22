@@ -30,13 +30,18 @@ def get_health():
 @app.route("/api/directors", methods=["GET", "POST"])
 def directors():
     if request.method == "GET":
-        result = DirectorResource.get_all()
+        tmp = copy.copy(request.args)
+        limit = tmp.get("limit")
+        offset = tmp.get("offset")
+        # print(tmp)
+        result = DirectorResource.get_all(limit, offset)
         if result:
-            rsp = Response(json.dumps(result), status=200, content_type="application.json")
+            res = json.dumps(result)
+            status_code = 200
         else:
-            rsp = Response("NOT FOUND", status=404, content_type="text/plain")
-        return rsp
-    else:
+            res = "Not found"
+            status_code = 404
+    elif request.method == "POST":
         director_profile = request.get_json()
         try:
             ret = DirectorResource.create_director(**director_profile)
@@ -49,7 +54,10 @@ def directors():
         except Exception as e:
             res = 'Error: {}'.format(str(e))
             status_code = 422
-        return Response(f"{status_code} - {res}", status=status_code, mimetype="application/json")
+    else:
+        res = 'Not implemented'
+        status_code = 501
+    return Response(f"{status_code} - {res}", status=status_code, mimetype="application/json")
 
 
 @app.route("/api/directors/<guid>", methods=["GET", "PUT", "DELETE"])
@@ -58,33 +66,33 @@ def director_by_id(guid):
         tmp = copy.copy(request.args)
         limit = tmp.get("limit")
         offset = tmp.get("offset")
-        if limit and offset:
-            del tmp['limit']
-            del tmp['offset']
         result = DirectorResource.get_by_template('*', {'guid': guid}, limit, offset)
         if result:
             rsp = Response(json.dumps(result), status=200, content_type="application.json")
         else:
-            rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+            rsp = Response("Not found", status=404, content_type="text/plain")
     elif request.method == "PUT":
         director_profile = request.get_json()
         if len(director_profile) != 7:
             rsp = Response('input length not right', status=400, content_type="text/plain")
         else:
             try:
-                result = DirectorResource.update_director(**director_profile)
+                result = DirectorResource.update_director(guid, **director_profile)
                 if result:
-                    rsp = Response(json.dumps(result), status=200, content_type="application.json")
+                    rsp = Response('Update successful', status=200, content_type="application.json")
                 else:
-                    rsp = Response("NOT FOUND", status=404, content_type="text/plain")
-            except:
-                rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+                    rsp = Response("Update failed", status=404, content_type="text/plain")
+            except Exception as e:
+                rsp = Response('Error: {}'.format(str(e)), status=404, content_type="text/plain")
     elif request.method == "DELETE":
-        result = DirectorResource.delete_director(guid)
-        if result:
-            rsp = Response(json.dumps(result), status=200, content_type="application.json")
-        else:
-            rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+        try:
+            result = DirectorResource.delete_director(guid)
+            if result:
+                rsp = Response('Delete successful', status=200, content_type="application.json")
+            else:
+                rsp = Response("Delete failed", status=404, content_type="text/plain")
+        except Exception as e:
+            rsp = Response('Error: {}'.format(str(e)), status=404, content_type="text/plain")
     else:
         rsp = Response("NOT IMPLEMENTED", status=501, content_type="text/plain")
     return rsp

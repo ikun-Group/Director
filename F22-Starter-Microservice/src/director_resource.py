@@ -26,8 +26,12 @@ class DirectorResource:
         return conn
 
     @staticmethod
-    def get_all():
+    def get_all(limit=None, offset=None):
         sql = "SELECT * FROM director_databases.director_table"
+        if limit:
+            sql += " limit " + str(limit)
+        if offset:
+            sql += " offset " + str(offset)
         conn = DirectorResource._get_connection()
         cur = conn.cursor()
         res = cur.execute(sql)
@@ -42,10 +46,10 @@ class DirectorResource:
               + " and ".join(["%s = '%s'" % (key, val) if not type(val) == int
                               else "%s = %s" % (key, val)
                               for (key, val) in template.items()])
-        if not limit and not offset:
-            pass
-        else:
-            sql += " limit " + str(limit) + " offset " + str(offset)
+        if limit:
+            sql += " limit " + str(limit)
+        if offset:
+            sql += " offset " + str(offset)
 
         conn = DirectorResource._get_connection()
         cur = conn.cursor()
@@ -56,13 +60,12 @@ class DirectorResource:
     @staticmethod
     def create_director(first_name, middle_name, last_name, gender, birth_year, birth_month, birth_day):
         guid = str(uuid.uuid4())
-        sql = "INSERT INTO director_databases.director_table(first_name, middle_name, \
-        last_name, gender, birth_year, birth_month, birth_day) VALUES(%s,%s,%s,%s,%s,%s,%s)"
+        sql = "INSERT INTO director_databases.director_table(guid, first_name, middle_name, \
+        last_name, gender, birth_year, birth_month, birth_day) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)"
         conn = DirectorResource._get_connection()
         cur = conn.cursor()
         res = cur.execute(sql, (guid, first_name, middle_name, last_name, gender, birth_year, birth_month, birth_day))
-        result = cur.fetchone()
-        return result
+        return res
 
     @staticmethod
     def update_director(guid, first_name, middle_name, last_name, gender, birth_year, birth_month, birth_day):
@@ -71,14 +74,12 @@ class DirectorResource:
         conn = DirectorResource._get_connection()
         cur = conn.cursor()
         res = cur.execute(sql, (first_name, middle_name, last_name, gender, birth_year, birth_month, birth_day, guid))
-        result = cur.fetchone()
-        return result
+        return res
 
     @staticmethod
     def delete_director(guid):
-        sql = "DELETE FROM director_databases.director_table WHERE guid=%s "
+        sql = "DELETE FROM director_databases.director_table WHERE guid=%s"
         conn = DirectorResource._get_connection()
         cur = conn.cursor()
         res = cur.execute(sql, guid)
-        result = cur.fetchone()
-        return result
+        return res
