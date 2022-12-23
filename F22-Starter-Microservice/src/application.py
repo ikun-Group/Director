@@ -5,6 +5,8 @@ import json
 from director_resource import DirectorResource
 from flask_cors import CORS
 import copy
+from rest_utils import RESTContext
+
 
 app = Flask(__name__,
             static_url_path='/',
@@ -29,12 +31,10 @@ def get_health():
 
 @app.route("/api/directors", methods=["GET", "POST"])
 def directors():
-    if request.method == "GET":
-        tmp = copy.copy(request.args)
-        limit = tmp.get("limit")
-        offset = tmp.get("offset")
-        # print(tmp)
-        result = DirectorResource.get_all(limit, offset)
+    request_inputs = RESTContext(request, directors)
+    if request_inputs.method == "GET":
+        result = DirectorResource.get_all(limit=request_inputs.limit, offset=request_inputs.offset)
+        result = request_inputs.add_pagination(result)
         if result:
             res = json.dumps(result)
             status_code = 200
@@ -63,10 +63,7 @@ def directors():
 @app.route("/api/directors/<guid>", methods=["GET", "PUT", "DELETE"])
 def director_by_id(guid):
     if request.method == "GET":
-        tmp = copy.copy(request.args)
-        limit = tmp.get("limit")
-        offset = tmp.get("offset")
-        result = DirectorResource.get_by_template('*', {'guid': guid}, limit, offset)
+        result = DirectorResource.get_by_template('*', {'guid': guid}, limit=None, offset=None)
         if result:
             rsp = Response(json.dumps(result), status=200, content_type="application.json")
         else:
